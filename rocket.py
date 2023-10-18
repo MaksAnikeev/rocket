@@ -2,23 +2,47 @@ import time
 import asyncio
 import curses
 
+
 async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await asyncio.sleep(0)
+        for i in range(20):
+            await asyncio.sleep(0)
+
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for i in range(3):
+            await asyncio.sleep(0)
+
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
+        for i in range(5):
+            await asyncio.sleep(0)
+
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for i in range(3):
+            await asyncio.sleep(0)
+
+
+        # shrifts = [{'shrift':curses.A_DIM, 'timer': 2},
+        #           {'shrift': '', 'timer': 0.3},
+        #           {'shrift': curses.A_BOLD, 'timer': 0.5},
+        #           {'shrift': '', 'timer': 0.3}]
+        # for number, coroutine_step in enumerate(shrifts):
+        #     if coroutine_step['shrift']:
+        #         canvas.addstr(row, column, f'{number}', coroutine_step['shrift'])
+        #         await asyncio.sleep(0)
+        #     else:
+        #         canvas.addstr(row, column, f'{number}')
+        #         await asyncio.sleep(0)
+        #     time.sleep(coroutine_step['timer']/stars_quantity)
+        #     await asyncio.sleep(0)
+
 
 def draw(canvas):
     curses.curs_set(False)
     canvas.border()
     coroutines = []
-    for i in range(quantity):
-        row, column = (2, 10+i*2)
+    for i in range(stars_quantity):
+        row, column = (2, 2+i*2)
         coroutine = blink(canvas, row, column)
         coroutines.append(coroutine)
     while True:
@@ -27,12 +51,12 @@ def draw(canvas):
                 coroutine.send(None)
             except StopIteration:
                 coroutines.remove(coroutine)
+        time.sleep(0.1)
         canvas.refresh()
-        time.sleep(1)
         if not len(coroutines):
             break
 
 if __name__ == '__main__':
-    quantity = 5
+    stars_quantity = 20
     curses.update_lines_cols()
     curses.wrapper(draw)
