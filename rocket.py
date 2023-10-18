@@ -17,7 +17,7 @@ def draw(canvas):
     curses.curs_set(False)
     canvas.border()
     coroutines = []
-    for i in range(5):
+    for i in range(quantity):
         row, column = (2, 10+i*2)
         coroutine = blink(canvas, row, column)
         coroutines.append(coroutine)
@@ -33,5 +33,6 @@ def draw(canvas):
             break
 
 if __name__ == '__main__':
+    quantity = 5
     curses.update_lines_cols()
     curses.wrapper(draw)
