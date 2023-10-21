@@ -2,9 +2,16 @@ import time
 import asyncio
 import curses
 import random
+from itertools import cycle
 
 STARS_QUANTITY = 100
 TIC_TIMEOUT = 0.1
+
+SPACE_KEY_CODE = 32
+LEFT_KEY_CODE = 260
+RIGHT_KEY_CODE = 261
+UP_KEY_CODE = 259
+DOWN_KEY_CODE = 258
 
 
 # async def blink(canvas, row, column, symbol='*'):
@@ -29,7 +36,8 @@ TIC_TIMEOUT = 0.1
 
 
 async def blink(canvas, row, column, symbol='*'):
-    """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму прописанному в отдельном словаре"""
+    """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму
+     прописанному в отдельном словаре"""
 
     while True:
         fonts = [
@@ -46,18 +54,36 @@ async def blink(canvas, row, column, symbol='*'):
 
 async def animate_spaceship(canvas, row, column, symbol, symbol2):
     """Корутина, отрисовывающая космический корабль"""
+    obstacle_right, obstacle_left, obstacle_top, obstacle_botton = calculate_obsticles(canvas, symbol)
 
     while True:
-        draw_frame(canvas, row, column, symbol2, negative=True)
-        draw_frame(canvas, row, column, symbol)
-        await asyncio.sleep(0)
+        frames = [symbol, symbol2]
+        for frame in cycle(frames):
+            draw_frame(canvas, row, column, frame)
+            rows_direction, columns_direction, space_pressed = read_controls(canvas)
+            for i in range(2):
+                await asyncio.sleep(0)
+            draw_frame(canvas, row, column, frame, negative=True)
 
-        draw_frame(canvas, row, column, symbol, negative=True)
-        draw_frame(canvas, row, column, symbol2)
-        await asyncio.sleep(0)
+            if obstacle_botton > row > obstacle_top:
+                row += rows_direction
+            else:
+                if rows_direction > 0 and row <= obstacle_top:
+                    row += rows_direction
+                elif rows_direction < 0 and row >= obstacle_botton:
+                    row += rows_direction
+
+            if obstacle_left < column < obstacle_right:
+                column += columns_direction
+            else:
+                if columns_direction < 0 and column >= obstacle_right:
+                    column += columns_direction
+                elif columns_direction > 0 and column <= obstacle_left:
+                    column += columns_direction
 
 
-async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
+async def fire(canvas, start_row, start_column,
+               rows_speed=-0.3, columns_speed=0):
     """Корутина, отрисовывающая выстрел из корабля"""
 
     row, column = start_row, start_column
@@ -87,8 +113,32 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
+def calculate_obsticles(canvas, symbol):
+    """Функция вычисляет ограничения по экрану,
+     чтобы не залетал за рамку экрана"""
+
+    max_row = curses.window.getmaxyx(canvas)[0]
+    max_column = curses.window.getmaxyx(canvas)[1]
+    space_ship_rows, space_ship_columns = get_frame_size(symbol)
+    obstacle_right = max_column - 1 - space_ship_columns
+    obstacle_left = space_ship_columns/2 - 1
+    obstacle_botton = max_row - 1 - space_ship_rows
+    obstacle_top = 1
+    return obstacle_right, obstacle_left, obstacle_top, obstacle_botton
+
+
+def get_frame_size(text):
+    """Функция вычисления размеров корабля"""
+
+    lines = text.splitlines()
+    rows = len(lines)
+    columns = max([len(line) for line in lines])
+    return rows, columns
+
+
 def draw_frame(canvas, start_row, start_column, text, negative=False):
-    """Функция, которая отрисовывает объемный текст и может заменять один текст другим"""
+    """Функция, которая отрисовывает объемный текст
+     и может заменять один текст другим"""
 
     rows_number, columns_number = canvas.getmaxyx()
 
@@ -116,6 +166,37 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
             canvas.addch(row, column, symbol)
 
 
+def read_controls(canvas):
+    """Функция считывает нажатие клавиш вправо, влево, вниз, вверх"""
+
+    rows_direction = columns_direction = 0
+    space_pressed = False
+
+    while True:
+        canvas.nodelay(True)
+        pressed_key_code = canvas.getch()
+
+        if pressed_key_code == -1:
+            break
+
+        if pressed_key_code == UP_KEY_CODE:
+            rows_direction = -1
+
+        if pressed_key_code == DOWN_KEY_CODE:
+            rows_direction = 1
+
+        if pressed_key_code == RIGHT_KEY_CODE:
+            columns_direction = 1
+
+        if pressed_key_code == LEFT_KEY_CODE:
+            columns_direction = -1
+
+        if pressed_key_code == SPACE_KEY_CODE:
+            space_pressed = True
+
+    return rows_direction, columns_direction, space_pressed
+
+
 def draw(canvas):
     """Функция, выводит все корутины на экран и запускает эмуляции игры"""
 
@@ -132,7 +213,8 @@ def draw(canvas):
 
     start_row = curses.window.getmaxyx(canvas)[0]/2
     start_column = curses.window.getmaxyx(canvas)[1]/2
-    coroutine_fire = fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0)
+    coroutine_fire = fire(canvas, start_row, start_column,
+                          rows_speed=-0.3, columns_speed=0)
     coroutines.append(coroutine_fire)
 
     with open("animations/spaceship_frame1.txt", "r") as frame1:
@@ -141,7 +223,8 @@ def draw(canvas):
         spaceship_frame2 = frame2.read()
     start_row = curses.window.getmaxyx(canvas)[0] / 2 - 2
     start_column = curses.window.getmaxyx(canvas)[1] / 2 - 2
-    coroutine_spaceship = animate_spaceship(canvas, start_row, start_column, spaceship_frame1, spaceship_frame2)
+    coroutine_spaceship = animate_spaceship(canvas, start_row, start_column,
+                                            spaceship_frame1, spaceship_frame2)
     coroutines.append(coroutine_spaceship)
 
     while True:
