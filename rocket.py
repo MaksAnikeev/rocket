@@ -35,13 +35,13 @@ DOWN_KEY_CODE = 258
 #             await asyncio.sleep(0)
 
 
-async def blink(canvas, row, column, symbol='*'):
+async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму
      прописанному в отдельном словаре"""
 
     while True:
         fonts = [
-            {'font': curses.A_DIM, 'timer': random.randint(10, 30)},
+            {'font': curses.A_DIM, 'timer': offset_tics},
             {'font': curses.A_NORMAL, 'timer': 3},
             {'font': curses.A_BOLD, 'timer': 5},
             {'font': curses.A_NORMAL, 'timer': 3}]
@@ -195,7 +195,8 @@ def draw(canvas):
         column = random.randint(1, curses.window.getmaxyx(canvas)[1] - 2)
         stars = ['+', '*', '.', ':']
         symbol = random.choice(stars)
-        coroutine = blink(canvas, row, column, symbol)
+        offset_tics = random.randint(10, 30)
+        coroutine = blink(canvas, row, column, offset_tics, symbol)
         coroutines.append(coroutine)
 
     start_row = curses.window.getmaxyx(canvas)[0]/2
