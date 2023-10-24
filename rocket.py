@@ -6,6 +6,7 @@ from itertools import cycle
 
 STARS_QUANTITY = 100
 TIC_TIMEOUT = 0.1
+FRAME_THICKNESS = 1
 
 SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
@@ -107,10 +108,10 @@ def calculate_obsticles(canvas, symbol):
     max_row = curses.window.getmaxyx(canvas)[0]
     max_column = curses.window.getmaxyx(canvas)[1]
     space_ship_rows, space_ship_columns = get_frame_size(symbol)
-    obstacle_right = max_column - 1 - space_ship_columns
-    obstacle_left = space_ship_columns/2 - 1
-    obstacle_botton = max_row - 1 - space_ship_rows
-    obstacle_top = 1
+    obstacle_right = max_column - FRAME_THICKNESS - space_ship_columns
+    obstacle_left = space_ship_columns/2 - FRAME_THICKNESS
+    obstacle_botton = max_row - FRAME_THICKNESS - space_ship_rows
+    obstacle_top = FRAME_THICKNESS
     return obstacle_right, obstacle_left, obstacle_top, obstacle_botton
 
 
@@ -191,8 +192,8 @@ def draw(canvas):
     canvas.border()
     coroutines = []
     for i in range(STARS_QUANTITY):
-        row = random.randint(1, curses.window.getmaxyx(canvas)[0] - 2)
-        column = random.randint(1, curses.window.getmaxyx(canvas)[1] - 2)
+        row = random.randint(FRAME_THICKNESS, curses.window.getmaxyx(canvas)[0] - FRAME_THICKNESS*2)
+        column = random.randint(FRAME_THICKNESS, curses.window.getmaxyx(canvas)[1] - FRAME_THICKNESS*2)
         stars = ['+', '*', '.', ':']
         symbol = random.choice(stars)
         offset_tics = random.randint(10, 30)
