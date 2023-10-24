@@ -56,30 +56,18 @@ async def animate_spaceship(canvas, row, column, symbol, symbol2):
     """Корутина, отрисовывающая космический корабль"""
     obstacle_right, obstacle_left, obstacle_top, obstacle_botton = calculate_obsticles(canvas, symbol)
 
-    while True:
-        frames = [symbol, symbol2]
-        for frame in cycle(frames):
-            draw_frame(canvas, row, column, frame)
-            rows_direction, columns_direction, space_pressed = read_controls(canvas)
-            for i in range(2):
-                await asyncio.sleep(0)
-            draw_frame(canvas, row, column, frame, negative=True)
+    frames = [symbol, symbol2]
+    for frame in cycle(frames):
+        draw_frame(canvas, row, column, frame)
+        rows_direction, columns_direction, space_pressed = read_controls(canvas)
+        for i in range(2):
+            await asyncio.sleep(0)
+        draw_frame(canvas, row, column, frame, negative=True)
 
-            if obstacle_botton > row > obstacle_top:
-                row += rows_direction
-            else:
-                if rows_direction > 0 and row <= obstacle_top:
-                    row += rows_direction
-                elif rows_direction < 0 and row >= obstacle_botton:
-                    row += rows_direction
-
-            if obstacle_left < column < obstacle_right:
-                column += columns_direction
-            else:
-                if columns_direction < 0 and column >= obstacle_right:
-                    column += columns_direction
-                elif columns_direction > 0 and column <= obstacle_left:
-                    column += columns_direction
+        row += rows_direction
+        row = max(min(obstacle_botton, row), obstacle_top)
+        column += columns_direction
+        column = max(min(obstacle_right, column), int(obstacle_left))
 
 
 async def fire(canvas, start_row, start_column,
