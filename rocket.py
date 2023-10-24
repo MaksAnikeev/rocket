@@ -210,8 +210,9 @@ def draw(canvas):
         spaceship_frame1 = frame1.read()
     with open("animations/spaceship_frame2.txt", "r") as frame2:
         spaceship_frame2 = frame2.read()
-    start_row = curses.window.getmaxyx(canvas)[0] / 2 - 2
-    start_column = curses.window.getmaxyx(canvas)[1] / 2 - 2
+    screen_width, screen_length = curses.window.getmaxyx(canvas)
+    start_row = screen_width / 2 - 2
+    start_column = screen_length / 2 - 2
     coroutine_spaceship = animate_spaceship(canvas, start_row, start_column,
                                             spaceship_frame1, spaceship_frame2)
     coroutines.append(coroutine_spaceship)
