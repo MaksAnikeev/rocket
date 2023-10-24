@@ -56,12 +56,11 @@ async def animate_spaceship(canvas, row, column, symbol, symbol2):
     """Корутина, отрисовывающая космический корабль"""
     obstacle_right, obstacle_left, obstacle_top, obstacle_botton = calculate_obsticles(canvas, symbol)
 
-    frames = [symbol, symbol2]
+    frames = [symbol, symbol, symbol2, symbol2]
     for frame in cycle(frames):
         draw_frame(canvas, row, column, frame)
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
-        for i in range(2):
-            await asyncio.sleep(0)
+        await asyncio.sleep(0)
         draw_frame(canvas, row, column, frame, negative=True)
 
         row += rows_direction
