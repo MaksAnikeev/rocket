@@ -15,27 +15,6 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
-# async def blink(canvas, row, column, symbol='*'):
-#     """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму, с прописанием каждого шага в корутине"""
-#
-#     while True:
-#         canvas.addstr(row, column, symbol, curses.A_DIM)
-#         for i in range(random.randint(10, 30)):
-#             await asyncio.sleep(0)
-#
-#         canvas.addstr(row, column, symbol)
-#         for i in range(3):
-#             await asyncio.sleep(0)
-#
-#         canvas.addstr(row, column, symbol, curses.A_BOLD)
-#         for i in range(5):
-#             await asyncio.sleep(0)
-#
-#         canvas.addstr(row, column, symbol)
-#         for i in range(3):
-#             await asyncio.sleep(0)
-
-
 async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму
      прописанному в отдельном словаре"""
@@ -101,6 +80,36 @@ async def fire(canvas, start_row, start_column,
         column += columns_speed
 
 
+
+async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
+    """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
+    rows_number, columns_number = canvas.getmaxyx()
+
+    column = max(column, 0)
+    column = min(column, columns_number - 1)
+
+    row = 0
+
+    while row < rows_number:
+        draw_frame(canvas, row, column, garbage_frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, row, column, garbage_frame, negative=True)
+        row += speed
+
+
+async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
+    first_column = 0
+    last_column = curses.window.getmaxyx(canvas)[1]
+
+    while True:
+        column = random.randint(first_column, last_column)
+        garbage_frame = random.choice(garbage_variants)
+        coroutine_garbage = fly_garbage(canvas, column, garbage_frame, speed)
+        for i in range(20):
+            await asyncio.sleep(0)
+        coroutines.append(coroutine_garbage)
+
+
 def calculate_obsticles(canvas, symbol):
     """Функция вычисляет ограничения по экрану,
      чтобы не залетал за рамку экрана"""
@@ -154,6 +163,29 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
             canvas.addch(row, column, symbol)
 
 
+def open_animations():
+    with open("animations/spaceship_frame1.txt", "r") as frame1:
+        spaceship_frame1 = frame1.read()
+    with open("animations/spaceship_frame2.txt", "r") as frame2:
+        spaceship_frame2 = frame2.read()
+    with open('animations/duck.txt', "r") as garbage_file:
+        duck = garbage_file.read()
+    with open('animations/hubble.txt', "r") as garbage_file:
+        hubble = garbage_file.read()
+    with open('animations/lamp.txt', "r") as garbage_file:
+        lamp = garbage_file.read()
+    with open('animations/trash_large.txt', "r") as garbage_file:
+        trash_large = garbage_file.read()
+    with open('animations/trash_small.txt', "r") as garbage_file:
+        trash_small = garbage_file.read()
+    with open('animations/trash_xl.txt', "r") as garbage_file:
+        trash_xl = garbage_file.read()
+
+    garbage_variants = [duck, hubble, lamp, trash_large, trash_small, trash_xl]
+
+    return spaceship_frame1, spaceship_frame2, garbage_variants
+
+
 def read_controls(canvas):
     """Функция считывает нажатие клавиш вправо, влево, вниз, вверх"""
 
@@ -190,6 +222,7 @@ def draw(canvas):
 
     curses.curs_set(False)
     canvas.border()
+    global coroutines
     coroutines = []
     for i in range(STARS_QUANTITY):
         row = random.randint(FRAME_THICKNESS, curses.window.getmaxyx(canvas)[0] - FRAME_THICKNESS*2)
@@ -206,16 +239,18 @@ def draw(canvas):
                           rows_speed=-0.3, columns_speed=0)
     coroutines.append(coroutine_fire)
 
-    with open("animations/spaceship_frame1.txt", "r") as frame1:
-        spaceship_frame1 = frame1.read()
-    with open("animations/spaceship_frame2.txt", "r") as frame2:
-        spaceship_frame2 = frame2.read()
+    spaceship_frame1, spaceship_frame2, garbage_variants = open_animations()
+
     screen_width, screen_length = curses.window.getmaxyx(canvas)
     start_row = screen_width / 2 - 2
     start_column = screen_length / 2 - 2
     coroutine_spaceship = animate_spaceship(canvas, start_row, start_column,
                                             spaceship_frame1, spaceship_frame2)
     coroutines.append(coroutine_spaceship)
+
+    for i in range(5):
+        coroutine_garbage = fill_orbit_with_garbage(canvas, garbage_variants, speed=0.5)
+        coroutines.append(coroutine_garbage)
 
     while True:
         for coroutine in coroutines.copy():
