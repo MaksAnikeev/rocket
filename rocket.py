@@ -3,6 +3,7 @@ import asyncio
 import curses
 import random
 from itertools import cycle
+from physics import update_speed
 
 STARS_QUANTITY = 100
 TIC_TIMEOUT = 0.1
@@ -41,16 +42,40 @@ async def animate_spaceship(canvas, row, column, symbol, symbol2):
     obstacle_right, obstacle_left, obstacle_top, obstacle_botton = calculate_obsticles(canvas, symbol)
 
     frames = [symbol, symbol, symbol2, symbol2]
+    row_speed = column_speed = 0
     for frame in cycle(frames):
         draw_frame(canvas, row, column, frame)
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, frame, negative=True)
 
+        row_speed, column_speed = run_speed(rows_direction, columns_direction, row_speed, column_speed)
         row += rows_direction
+        row += row_speed
         row = max(min(obstacle_botton, row), obstacle_top)
+
         column += columns_direction
+        column += column_speed
         column = max(min(obstacle_right, column), int(obstacle_left))
+
+
+def run_speed(rows_direction, columns_direction, row_speed, column_speed):
+    # row_speed = column_speed = 0
+    if rows_direction < 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, -1, 0)
+    if rows_direction == 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, 0, 0)
+    if rows_direction > 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, 1, 0)
+
+    if columns_direction < 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, 0, -1)
+    if columns_direction == 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, 0, 0)
+    if columns_direction > 0:
+        row_speed, column_speed = update_speed(row_speed, column_speed, 0, 1)
+
+    return row_speed, column_speed
 
 
 async def fire(canvas, start_row, start_column,
