@@ -15,6 +15,11 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
+async def sleep(tics=1):
+    for i in range(tics):
+        await asyncio.sleep(0)
+
+
 async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Вариант корутины с миганием звезд, когда звезды зажигаются по алгоритму
      прописанному в отдельном словаре"""
@@ -28,8 +33,7 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
 
         for coroutine_step in fonts:
             canvas.addstr(row, column, symbol, coroutine_step['font'])
-            for i in range(coroutine_step['timer']):
-                await asyncio.sleep(0)
+            await sleep(tics=coroutine_step['timer'])
 
 
 async def animate_spaceship(canvas, row, column, symbol, symbol2):
@@ -105,8 +109,7 @@ async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
         column = random.randint(first_column, last_column)
         garbage_frame = random.choice(garbage_variants)
         coroutine_garbage = fly_garbage(canvas, column, garbage_frame, speed)
-        for i in range(20):
-            await asyncio.sleep(0)
+        await sleep(random.randint(15, 25))
         coroutines.append(coroutine_garbage)
 
 
