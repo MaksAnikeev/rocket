@@ -4,6 +4,7 @@ import curses
 import random
 from itertools import cycle
 from physics import update_speed
+from obstacles import Obstacle, show_obstacles
 
 STARS_QUANTITY = 100
 TIC_TIMEOUT = 0.1
@@ -15,6 +16,8 @@ RIGHT_KEY_CODE = 261
 UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
+obstacles = []
+coroutines = []
 
 async def sleep(tics=1):
     for i in range(tics):
@@ -58,9 +61,15 @@ async def animate_spaceship(canvas, row, column, symbol, symbol2):
         column += column_speed
         column = max(min(obstacle_right, column), int(obstacle_left))
 
+        if space_pressed:
+            start_row = row + 2
+            start_column = column + 2
+            coroutine_fire = fire(canvas, start_row, start_column,
+                                  rows_speed=-0.3, columns_speed=0)
+            coroutines.append(coroutine_fire)
+
 
 def run_speed(rows_direction, columns_direction, row_speed, column_speed):
-    # row_speed = column_speed = 0
     if rows_direction < 0:
         row_speed, column_speed = update_speed(row_speed, column_speed, -1, 0)
     if rows_direction == 0:
@@ -109,22 +118,22 @@ async def fire(canvas, start_row, start_column,
         column += columns_speed
 
 
-
-async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
+async def fly_garbage(canvas, garbage_object, column, row=0, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
 
     column = max(column, 0)
     column = min(column, columns_number - 1)
 
-    row = 0
-
+    garbage_rows, garbage_columns = get_frame_size(garbage_object)
+    obstacle = Obstacle(row, column, garbage_rows, garbage_columns, garbage_object)
+    obstacles.append(obstacle)
     while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
+        draw_frame(canvas, row, column, garbage_object)
         await asyncio.sleep(0)
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
+        draw_frame(canvas, row, column, garbage_object, negative=True)
         row += speed
-
+        obstacle.row = row
 
 async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
     first_column = 0
@@ -132,10 +141,14 @@ async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
 
     while True:
         column = random.randint(first_column, last_column)
-        garbage_frame = random.choice(garbage_variants)
-        coroutine_garbage = fly_garbage(canvas, column, garbage_frame, speed)
+        row = 0
+        garbage_object = random.choice(garbage_variants)
+
+        coroutine_garbage = fly_garbage(canvas, garbage_object, column, row, speed)
+
         await sleep(random.randint(15, 25))
         coroutines.append(coroutine_garbage)
+
 
 
 def calculate_obsticles(canvas, symbol):
@@ -250,8 +263,6 @@ def draw(canvas):
 
     curses.curs_set(False)
     canvas.border()
-    global coroutines
-    coroutines = []
     for i in range(STARS_QUANTITY):
         row = random.randint(FRAME_THICKNESS, curses.window.getmaxyx(canvas)[0] - FRAME_THICKNESS*2)
         column = random.randint(FRAME_THICKNESS, curses.window.getmaxyx(canvas)[1] - FRAME_THICKNESS*2)
@@ -260,12 +271,6 @@ def draw(canvas):
         offset_tics = random.randint(10, 30)
         coroutine = blink(canvas, row, column, offset_tics, symbol)
         coroutines.append(coroutine)
-
-    start_row = curses.window.getmaxyx(canvas)[0]/2
-    start_column = curses.window.getmaxyx(canvas)[1]/2
-    coroutine_fire = fire(canvas, start_row, start_column,
-                          rows_speed=-0.3, columns_speed=0)
-    coroutines.append(coroutine_fire)
 
     spaceship_frame1, spaceship_frame2, garbage_variants = open_animations()
 
@@ -279,6 +284,10 @@ def draw(canvas):
     for i in range(5):
         coroutine_garbage = fill_orbit_with_garbage(canvas, garbage_variants, speed=0.5)
         coroutines.append(coroutine_garbage)
+
+    coroutine_obstacle = show_obstacles(canvas, obstacles)
+    coroutines.append(coroutine_obstacle)
+
 
     while True:
         for coroutine in coroutines.copy():
