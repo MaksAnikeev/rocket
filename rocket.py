@@ -5,6 +5,9 @@ import random
 from itertools import cycle
 from physics import update_speed
 from obstacles import Obstacle, show_obstacles
+from explosion import explode
+from actions_with_frames import draw_frame, get_frame_size
+
 
 STARS_QUANTITY = 100
 TIC_TIMEOUT = 0.1
@@ -18,6 +21,8 @@ DOWN_KEY_CODE = 258
 
 obstacles = []
 coroutines = []
+obstacles_in_last_collisions = []
+
 
 async def sleep(tics=1):
     for i in range(tics):
@@ -116,6 +121,10 @@ async def fire(canvas, start_row, start_column,
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column):
+                obstacles_in_last_collisions.append(obstacle)
+                # return
 
 
 async def fly_garbage(canvas, garbage_object, column, row=0, speed=0.5):
@@ -134,6 +143,13 @@ async def fly_garbage(canvas, garbage_object, column, row=0, speed=0.5):
         draw_frame(canvas, row, column, garbage_object, negative=True)
         row += speed
         obstacle.row = row
+        if obstacle in obstacles_in_last_collisions:
+            await explode(canvas, row+garbage_rows/2, column+garbage_columns/2)
+            obstacles_in_last_collisions.remove(obstacle)
+            return
+        if row == rows_number:
+            obstacles.remove(obstacle)
+
 
 async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
     first_column = 0
@@ -150,7 +166,6 @@ async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
         coroutines.append(coroutine_garbage)
 
 
-
 def calculate_obsticles(canvas, symbol):
     """Функция вычисляет ограничения по экрану,
      чтобы не залетал за рамку экрана"""
@@ -163,45 +178,6 @@ def calculate_obsticles(canvas, symbol):
     obstacle_botton = max_row - FRAME_THICKNESS - space_ship_rows
     obstacle_top = FRAME_THICKNESS
     return obstacle_right, obstacle_left, obstacle_top, obstacle_botton
-
-
-def get_frame_size(text):
-    """Функция вычисления размеров корабля"""
-
-    lines = text.splitlines()
-    rows = len(lines)
-    columns = max([len(line) for line in lines])
-    return rows, columns
-
-
-def draw_frame(canvas, start_row, start_column, text, negative=False):
-    """Функция, которая отрисовывает объемный текст
-     и может заменять один текст другим"""
-
-    rows_number, columns_number = canvas.getmaxyx()
-
-    for row, line in enumerate(text.splitlines(), round(start_row)):
-        if row < 0:
-            continue
-
-        if row >= rows_number:
-            break
-
-        for column, symbol in enumerate(line, round(start_column)):
-            if column < 0:
-                continue
-
-            if column >= columns_number:
-                break
-
-            if symbol == ' ':
-                continue
-
-            if row == rows_number - 1 and column == columns_number - 1:
-                continue
-
-            symbol = symbol if not negative else ' '
-            canvas.addch(row, column, symbol)
 
 
 def open_animations():
@@ -281,12 +257,12 @@ def draw(canvas):
                                             spaceship_frame1, spaceship_frame2)
     coroutines.append(coroutine_spaceship)
 
-    for i in range(5):
-        coroutine_garbage = fill_orbit_with_garbage(canvas, garbage_variants, speed=0.5)
+    for i in range(3):
+        coroutine_garbage = fill_orbit_with_garbage(canvas, garbage_variants, speed=0.2)
         coroutines.append(coroutine_garbage)
 
-    coroutine_obstacle = show_obstacles(canvas, obstacles)
-    coroutines.append(coroutine_obstacle)
+    # coroutine_obstacle = show_obstacles(canvas, obstacles)
+    # coroutines.append(coroutine_obstacle)
 
 
     while True:
