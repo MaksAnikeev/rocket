@@ -112,7 +112,7 @@ async def animate_spaceship(canvas, row, column, symbol, symbol2):
         column += column_speed
         column = max(min(obstacle_right, column), int(obstacle_left))
 
-        if space_pressed and year >= 2020:
+        if space_pressed and year >= 2000:
             start_row = row + 2
             start_column = column + 2
             coroutine_fire = fire(canvas, start_row, start_column,
@@ -171,7 +171,6 @@ async def fire(canvas, start_row, start_column,
         for obstacle in obstacles:
             if obstacle.has_collision(row, column):
                 obstacles_in_last_collisions.append(obstacle)
-                # return
 
 
 async def fly_garbage(canvas, garbage_object, column, row=0, speed=0.5):
