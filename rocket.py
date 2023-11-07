@@ -1,5 +1,6 @@
 import asyncio
 import curses
+import os
 import random
 import time
 from itertools import cycle
@@ -208,7 +209,9 @@ async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
     while True:
         column = random.randint(first_column, last_column)
         row = 0
-        garbage_object = random.choice(garbage_variants)
+        garbage_variant = random.choice(garbage_variants)
+        with open(f'animations/garbage/{garbage_variant}', "r") as garbage_file:
+            garbage_object = garbage_file.read()
 
         if get_garbage_delay_tics(year):
             coroutine_garbage = fly_garbage(canvas, garbage_object, column, row, speed)
@@ -280,22 +283,11 @@ def open_animations():
         spaceship_frame1 = frame1.read()
     with open("animations/spaceship_frame2.txt", "r") as frame2:
         spaceship_frame2 = frame2.read()
-    with open('animations/duck.txt', "r") as garbage_file:
-        duck = garbage_file.read()
-    with open('animations/hubble.txt', "r") as garbage_file:
-        hubble = garbage_file.read()
-    with open('animations/lamp.txt', "r") as garbage_file:
-        lamp = garbage_file.read()
-    with open('animations/trash_large.txt', "r") as garbage_file:
-        trash_large = garbage_file.read()
-    with open('animations/trash_small.txt', "r") as garbage_file:
-        trash_small = garbage_file.read()
-    with open('animations/trash_xl.txt', "r") as garbage_file:
-        trash_xl = garbage_file.read()
     with open('animations/game_over.txt', "r", encoding="utf8") as game_over_file:
         game_over = game_over_file.read()
 
-    garbage_variants = [duck, hubble, lamp, trash_large, trash_small, trash_xl]
+    garbage_variants = os.listdir('animations/garbage')
+
     return spaceship_frame1, spaceship_frame2, garbage_variants, game_over
 
 
