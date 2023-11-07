@@ -210,11 +210,9 @@ async def fill_orbit_with_garbage(canvas, garbage_variants, speed):
         column = random.randint(first_column, last_column)
         row = 0
         garbage_variant = random.choice(garbage_variants)
-        with open(f'animations/garbage/{garbage_variant}', "r") as garbage_file:
-            garbage_object = garbage_file.read()
 
         if get_garbage_delay_tics(year):
-            coroutine_garbage = fly_garbage(canvas, garbage_object, column, row, speed)
+            coroutine_garbage = fly_garbage(canvas, garbage_variant, column, row, speed)
             time_break = get_garbage_delay_tics(year)
             await sleep(time_break*2)
             coroutines.append(coroutine_garbage)
@@ -286,7 +284,12 @@ def open_animations():
     with open('animations/game_over.txt', "r", encoding="utf8") as game_over_file:
         game_over = game_over_file.read()
 
-    garbage_variants = os.listdir('animations/garbage')
+    garbage_variants = []
+    garbage_files = os.listdir('animations/garbage')
+    for garbage_variant in garbage_files:
+        with open(f'animations/garbage/{garbage_variant}', "r") as garbage_file:
+            garbage_object = garbage_file.read()
+        garbage_variants.append(garbage_object)
 
     return spaceship_frame1, spaceship_frame2, garbage_variants, game_over
 
